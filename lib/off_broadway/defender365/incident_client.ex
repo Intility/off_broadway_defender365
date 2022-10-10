@@ -144,7 +144,7 @@ defmodule OffBroadway.Defender365.IncidentClient do
   @spec prepare_cfg(opts :: Keyword.t(), env :: Keyword.t()) :: Keyword.t()
   defp prepare_cfg(opts, env), do: Keyword.merge(env, Keyword.get(opts, :config))
 
-  defp fetch_client_token(opts) do
+  defp fetch_client_token(_opts) do
     # TODO fetch auth token here
     "secret-token"
   end
