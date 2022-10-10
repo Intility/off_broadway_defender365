@@ -20,7 +20,7 @@ erl_crash.dump
 *.ez
 
 # Ignore package tarball (built via "mix hex.build").
-off_broadway_365_defender-*.tar
+off_broadway_defender365-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
