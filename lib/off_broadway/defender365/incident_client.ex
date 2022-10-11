@@ -34,6 +34,8 @@ defmodule OffBroadway.Defender365.IncidentClient do
   @behaviour Acknowledger
   @behaviour OffBroadway.Defender365.Client
 
+  @max_num_incidents_allowed 100
+
   @impl true
   def init(opts) do
     {:ok,
@@ -63,10 +65,47 @@ defmodule OffBroadway.Defender365.IncidentClient do
   end
 
   @impl true
-  def receive_messages(demand, opts) when is_integer(demand) and demand in 1..100 do
-    client(put_demand_query(demand, opts))
+  def receive_messages(demand, opts), do: receive_messages(demand, opts, [])
+
+  def receive_messages(demand, opts, messages) when demand > 0 do
+    max_demand = min(demand, @max_num_incidents_allowed)
+    rem_demand = rem(demand, max_demand)
+
+    query =
+      case Keyword.get(opts, :query) do
+        nil -> Keyword.new("$top": max_demand)
+        kw -> Keyword.put(kw, :"$top", max_demand)
+      end
+
+    client_opts = Keyword.put(opts, :query, query)
+
+    client(client_opts)
     |> Tesla.get("/api/incidents")
-    |> wrap_received_messages(opts)
+    |> maybe_receive_messages(rem_demand, opts, messages)
+  end
+
+  def maybe_receive_messages({:ok, %{status: 200, body: %{"value" => messages}}}, rem_demand, opts, merge)
+      when is_list(messages) and rem_demand > 0 do
+    Logger.warning(
+      "Received demand greater than maximum allowed number of incidents allowed to fetch from " <>
+        "365 Defender API. Trying to fetch remaining #{rem_demand} incidents, but this can possibly " <>
+        "cause quota limits to be exceeded."
+    )
+
+    receive_messages(rem_demand, opts, messages ++ merge)
+  end
+
+  def maybe_receive_messages({:ok, %{status: 200, body: %{"value" => messages}}}, _remains, opts, merge)
+      when is_list(messages),
+      do: wrap_received_messages(messages ++ merge, opts)
+
+  def maybe_receive_messages({:ok, %{status: status_code, body: body}}, _remains, opts, merge) do
+    Logger.error(
+      "Failed to fetch incidents from remote host. " <>
+        "Request failed with status code #{status_code} and response body #{inspect(body)}."
+    )
+
+    wrap_received_messages(merge, opts)
   end
 
   @impl Acknowledger
@@ -94,25 +133,13 @@ defmodule OffBroadway.Defender365.IncidentClient do
     (msg_ack_options[option] || Map.fetch!(ack_options, option)) == :ack
   end
 
-  defp wrap_received_messages(
-         {:ok, %Tesla.Env{status: 200, body: %{"value" => messages}}},
-         opts
-       ) do
+  defp wrap_received_messages(messages, opts) do
     Enum.map(messages, fn message ->
       metadata = Map.put(message, "tenant_id", opts[:tenant_id]) |> to_struct("metadata")
       alerts = to_struct(message, "alerts")
       acknowledger = build_acknowledger(metadata, opts[:ack_ref])
       %Message{data: alerts, metadata: metadata, acknowledger: acknowledger}
     end)
-  end
-
-  defp wrap_received_messages({:ok, %Tesla.Env{status: status_code, body: body}}, _opts) do
-    Logger.error(
-      "Failed to fetch incidents from remote host. " <>
-        "Request failed with status code #{status_code} and response body #{inspect(body)}."
-    )
-
-    []
   end
 
   defp build_acknowledger(metadata, ack_ref) do
@@ -135,20 +162,15 @@ defmodule OffBroadway.Defender365.IncidentClient do
     |> Enum.map(fn alert -> Map.put(alert, :entities, Enum.map(alert.entities, &Incident.Entity.new/1)) end)
   end
 
-  @spec put_demand_query(demand :: pos_integer, Keyword.t()) :: Keyword.t()
-  defp put_demand_query(demand, opts) do
-    query = client_option(opts, :query) |> Keyword.put(:"$top", demand)
-    Keyword.put(opts, :query, query)
-  end
-
   @spec prepare_cfg(opts :: Keyword.t(), env :: Keyword.t()) :: Keyword.t()
   defp prepare_cfg(opts, env), do: Keyword.merge(env, Keyword.get(opts, :config))
 
   @spec fetch_client_token(opts :: Keyword.t()) :: String.t()
   defp fetch_client_token(opts) do
+    # TODO: Maybe cache token
     middleware = [
       Tesla.Middleware.FormUrlencoded,
-      {Tesla.Middleware.BaseUrl, "https://login.windows.net/#{opts[:tenant_id]}"}
+      {Tesla.Middleware.BaseUrl, "https://login.windows.net/#{client_option(opts, :tenant_id)}"}
     ]
 
     with body <- prepare_auth_client_body(opts),
@@ -170,8 +192,8 @@ defmodule OffBroadway.Defender365.IncidentClient do
   defp prepare_auth_client_body(opts),
     do: %{
       "resource" => "https://api.security.microsoft.com",
-      "client_id" => opts[:client_id],
-      "client_secret" => opts[:client_secret],
+      "client_id" => client_option(opts, :client_id),
+      "client_secret" => client_option(opts, :client_secret),
       "grant_type" => "client_credentials"
     }
 

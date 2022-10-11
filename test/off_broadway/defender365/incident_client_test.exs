@@ -71,6 +71,16 @@ defmodule OffBroadway.Defender365.IncidentClientTest do
                {IncidentClient, :BroadwayDefenderTest, %{receipt: %{id: 924_565}}}
     end
 
+    test "exceeding maximum allowed number of incidents fetches more", %{opts: base_opts} do
+      {:ok, opts} = IncidentClient.init(base_opts)
+
+      capture_log(fn ->
+        assert 6 == IncidentClient.receive_messages(150, opts) |> length()
+      end) =~ """
+      [warning] Received demand greater than maximum allowed number of incidents allowed to fetch from 365 Defender API. Trying to fetch remaining 50 incidents, but this can possibly cause quota limits to be exceeded.
+      """
+    end
+
     test "if the request fails, return an empty list and log the error", %{opts: base_opts} do
       config =
         Keyword.get(base_opts, :config)
