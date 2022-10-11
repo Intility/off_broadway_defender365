@@ -101,15 +101,15 @@ defmodule OffBroadway.Defender365.IncidentClient do
     Enum.map(messages, fn message ->
       metadata = Map.put(message, "tenant_id", opts[:tenant_id]) |> to_struct("metadata")
       alerts = to_struct(message, "alerts")
-      acknowledger = build_acknowledger(metadata, Keyword.fetch!(opts, :ack_ref))
+      acknowledger = build_acknowledger(metadata, opts[:ack_ref])
       %Message{data: alerts, metadata: metadata, acknowledger: acknowledger}
     end)
   end
 
-  defp wrap_received_messages({:ok, %Tesla.Env{status: status_code, body: _body}}, _opts) do
+  defp wrap_received_messages({:ok, %Tesla.Env{status: status_code, body: body}}, _opts) do
     Logger.error(
       "Failed to fetch incidents from remote host. " <>
-        "Request failed with status code #{inspect(status_code)}."
+        "Request failed with status code #{status_code} and response body #{inspect(body)}."
     )
 
     []
@@ -144,10 +144,36 @@ defmodule OffBroadway.Defender365.IncidentClient do
   @spec prepare_cfg(opts :: Keyword.t(), env :: Keyword.t()) :: Keyword.t()
   defp prepare_cfg(opts, env), do: Keyword.merge(env, Keyword.get(opts, :config))
 
-  defp fetch_client_token(_opts) do
-    # TODO fetch auth token here
-    "secret-token"
+  @spec fetch_client_token(opts :: Keyword.t()) :: String.t()
+  defp fetch_client_token(opts) do
+    middleware = [
+      Tesla.Middleware.FormUrlencoded,
+      {Tesla.Middleware.BaseUrl, "https://login.windows.net/#{opts[:tenant_id]}"}
+    ]
+
+    with body <- prepare_auth_client_body(opts),
+         client <- Tesla.client(middleware),
+         %Tesla.Env{status: 200, body: response_body} <- Tesla.post!(client, "/oauth2/token", body) do
+      Map.fetch!(response_body, "access_token")
+    else
+      %Tesla.Env{status: status, body: response_body} ->
+        Logger.error(
+          "Failed to obtain access token for service. " <>
+            "Request failed with status code #{status} and response body: #{inspect(response_body)}"
+        )
+
+        ""
+    end
   end
+
+  @spec prepare_auth_client_body(opts :: Keyword.t()) :: map
+  defp prepare_auth_client_body(opts),
+    do: %{
+      "resource" => "https://api.security.microsoft.com",
+      "client_id" => opts[:client_id],
+      "client_secret" => opts[:client_secret],
+      "grant_type" => "client_credentials"
+    }
 
   @spec client_option(opts :: Keyword.t(), Atom.t()) :: any
   defp client_option(opts, :base_url), do: Keyword.get(opts, :base_url, "https://api.security.microsoft.com")

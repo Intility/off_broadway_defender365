@@ -15,6 +15,17 @@ defmodule OffBroadway.Defender365.IncidentClientTest do
 
       %{method: :get, url: "https://api-fails.security.microsoft.com/api/incidents"} ->
         %Tesla.Env{status: 400, body: %{"error" => "some error message"}}
+
+      %{method: :post, url: "https://login.windows.net/this-is-my-tenant-id/oauth2/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            "token_type" => "Bearer",
+            "expires_in" => 3599,
+            "ext_expires_in" => 3599,
+            "access_token" => "this-is-my-access-token"
+          }
+        }
     end)
   end
 
@@ -70,7 +81,7 @@ defmodule OffBroadway.Defender365.IncidentClientTest do
       assert capture_log(fn ->
                assert [] == IncidentClient.receive_messages(100, opts)
              end) =~ """
-             [error] Failed to fetch incidents from remote host. Request failed with status code 400.
+             [error] Failed to fetch incidents from remote host. Request failed with status code 400 and response body %{\"error\" => \"some error message\"}.
              """
     end
   end
