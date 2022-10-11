@@ -131,6 +131,154 @@ defmodule OffBroadway.Defender365.ProducerTest do
     end
   end
 
+  describe "producer" do
+    test "receive messages when the queue has less than the demand" do
+      {:ok, message_server} = MessageServer.start_link()
+      {:ok, pid} = start_broadway(message_server)
+
+      MessageServer.push_messages(message_server, 1..5)
+
+      assert_receive {:messages_received, 5}
+
+      for msg <- 1..5 do
+        assert_receive {:message_handled, ^msg, _}
+      end
+
+      stop_broadway(pid)
+    end
+
+    test "receive messages with metadata defined by the client" do
+      {:ok, message_server} = MessageServer.start_link()
+      {:ok, pid} = start_broadway(message_server)
+      MessageServer.push_messages(message_server, 1..5)
+
+      assert_receive {:message_handled, _, %{custom: "custom-data"}}
+
+      stop_broadway(pid)
+    end
+
+    test "keep receiving messages when the queue has more than the demand" do
+      {:ok, message_server} = MessageServer.start_link()
+      MessageServer.push_messages(message_server, 1..20)
+      {:ok, pid} = start_broadway(message_server)
+
+      assert_receive {:messages_received, 10}
+
+      for msg <- 1..10 do
+        assert_receive {:message_handled, ^msg, _}
+      end
+
+      assert_receive {:messages_received, 5}
+
+      for msg <- 11..15 do
+        assert_receive {:message_handled, ^msg, _}
+      end
+
+      assert_receive {:messages_received, 5}
+
+      for msg <- 16..20 do
+        assert_receive {:message_handled, ^msg, _}
+      end
+
+      assert_receive {:messages_received, 0}
+
+      stop_broadway(pid)
+    end
+
+    test "keep trying to receive new messages when the queue is empty" do
+      {:ok, message_server} = MessageServer.start_link()
+      {:ok, pid} = start_broadway(message_server)
+
+      MessageServer.push_messages(message_server, [13])
+      assert_receive {:messages_received, 1}
+      assert_receive {:message_handled, 13, _}
+
+      assert_receive {:messages_received, 0}
+      refute_receive {:message_handled, _, _}
+
+      MessageServer.push_messages(message_server, [14, 15])
+      assert_receive {:messages_received, 2}
+      assert_receive {:message_handled, 14, _}
+      assert_receive {:message_handled, 15, _}
+
+      stop_broadway(pid)
+    end
+
+    test "stop trying to receive new messages after start draining" do
+      {:ok, message_server} = MessageServer.start_link()
+      broadway_name = new_unique_name()
+      {:ok, pid} = start_broadway(broadway_name, message_server, receive_interval: 5_000)
+
+      [producer] = Broadway.producer_names(broadway_name)
+      assert_receive {:messages_received, 0}
+
+      # Drain and explicitly ask it to receive messages but it shouldn't work
+      Broadway.Topology.ProducerStage.drain(producer)
+      send(producer, :receive_messages)
+
+      refute_receive {:messages_received, _}, 10
+      stop_broadway(pid)
+    end
+
+    test "acknowledged messages" do
+      {:ok, message_server} = MessageServer.start_link()
+      {:ok, pid} = start_broadway(message_server)
+
+      MessageServer.push_messages(message_server, 1..20)
+      assert_receive {:messages_acknowledged, 10}
+
+      stop_broadway(pid)
+    end
+
+    test "emit a telemetry start event with demand" do
+      self = self()
+      {:ok, message_server} = MessageServer.start_link()
+      {:ok, pid} = start_broadway(message_server)
+
+      capture_log(fn ->
+        :ok =
+          :telemetry.attach(
+            "start_test",
+            [:off_broadway_defender365, :receive_messages, :start],
+            fn name, measurements, metadata, _ ->
+              send(self, {:telemetry_event, name, measurements, metadata})
+            end,
+            nil
+          )
+      end)
+
+      MessageServer.push_messages(message_server, [2])
+
+      assert_receive {:telemetry_event, [:off_broadway_defender365, :receive_messages, :start], %{system_time: _},
+                      %{demand: 10}}
+
+      stop_broadway(pid)
+    end
+
+    test "emit a telemetry stop event with received count" do
+      self = self()
+      {:ok, message_server} = MessageServer.start_link()
+      {:ok, pid} = start_broadway(message_server)
+
+      capture_log(fn ->
+        :ok =
+          :telemetry.attach(
+            "stop_test",
+            [:off_broadway_defender365, :receive_messages, :stop],
+            fn name, measurements, metadata, _ ->
+              send(self, {:telemetry_event, name, measurements, metadata})
+            end,
+            nil
+          )
+      end)
+
+      assert_receive {:telemetry_event, [:off_broadway_defender365, :receive_messages, :stop], %{duration: _},
+                      %{received: _, demand: 10}}
+
+      stop_broadway(pid)
+    end
+  end
+
   defp start_broadway(broadway_name \\ new_unique_name(), message_server, opts \\ []) do
     Broadway.start_link(
       Forwarder,
