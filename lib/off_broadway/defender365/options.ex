@@ -17,8 +17,10 @@ defmodule OffBroadway.Defender365.Options do
         type: {
           :custom,
           __MODULE__,
-          :type_date_time
+          :type_date_time,
+          [[{:name, :from_timestamp}]]
         },
+        required: false,
         doc: """
         If present, use this value to fetch incidents with "lastUpdateTime" greater or
         equal to given value.
@@ -47,7 +49,6 @@ defmodule OffBroadway.Defender365.Options do
         from the 365 Defender APIs. All options passed to the producer will also be forwarded to
         the client.
         """,
-        type: :mod_arg,
         default: OffBroadway.Defender365.IncidentClient
       ],
       config: [
@@ -61,13 +62,12 @@ defmodule OffBroadway.Defender365.Options do
         doc: """
         A set of config options that overrides the default config for the `incident_client`
         module. Any option set here can also be configured in `config.exs`.
-        """,
-        default: []
+        """
       ],
       test_pid: [type: :pid, doc: false],
       message_server: [type: :pid, doc: false]
     ]
   end
 
-  def type_date_time(value) when is_struct(value), do: {:ok, value}
+  def type_date_time(value, _) when is_struct(value), do: {:ok, value}
 end
