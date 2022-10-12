@@ -4,6 +4,8 @@ defmodule OffBroadway.Defender365.ProducerTest do
   alias Broadway.Message
   import ExUnit.CaptureLog
 
+  @receive_timeout 1200
+
   defmodule MessageServer do
     def start_link, do: Agent.start_link(fn -> [] end)
 
@@ -32,7 +34,8 @@ defmodule OffBroadway.Defender365.ProducerTest do
           test_pid: opts[:test_pid]
         }
 
-        metadata = %{custom: "custom-data"}
+        timestamp = DateTime.utc_now()
+        metadata = %{last_update_time: DateTime.to_iso8601(timestamp), custom: "custom-data"}
         %Message{data: msg, metadata: metadata, acknowledger: {__MODULE__, :ack_ref, ack_data}}
       end
     end
@@ -138,10 +141,10 @@ defmodule OffBroadway.Defender365.ProducerTest do
 
       MessageServer.push_messages(message_server, 1..5)
 
-      assert_receive {:messages_received, 5}
+      assert_receive {:messages_received, 5}, @receive_timeout
 
       for msg <- 1..5 do
-        assert_receive {:message_handled, ^msg, _}
+        assert_receive {:message_handled, ^msg, _}, @receive_timeout
       end
 
       stop_broadway(pid)
@@ -152,7 +155,7 @@ defmodule OffBroadway.Defender365.ProducerTest do
       {:ok, pid} = start_broadway(message_server)
       MessageServer.push_messages(message_server, 1..5)
 
-      assert_receive {:message_handled, _, %{custom: "custom-data"}}
+      assert_receive {:message_handled, _, %{custom: "custom-data"}}, @receive_timeout
 
       stop_broadway(pid)
     end
@@ -162,25 +165,25 @@ defmodule OffBroadway.Defender365.ProducerTest do
       MessageServer.push_messages(message_server, 1..20)
       {:ok, pid} = start_broadway(message_server)
 
-      assert_receive {:messages_received, 10}
+      assert_receive {:messages_received, 10}, @receive_timeout
 
       for msg <- 1..10 do
-        assert_receive {:message_handled, ^msg, _}
+        assert_receive {:message_handled, ^msg, _}, @receive_timeout
       end
 
-      assert_receive {:messages_received, 5}
+      assert_receive {:messages_received, 5}, @receive_timeout
 
       for msg <- 11..15 do
-        assert_receive {:message_handled, ^msg, _}
+        assert_receive {:message_handled, ^msg, _}, @receive_timeout
       end
 
-      assert_receive {:messages_received, 5}
+      assert_receive {:messages_received, 5}, @receive_timeout
 
       for msg <- 16..20 do
-        assert_receive {:message_handled, ^msg, _}
+        assert_receive {:message_handled, ^msg, _}, @receive_timeout
       end
 
-      assert_receive {:messages_received, 0}
+      assert_receive {:messages_received, 0}, @receive_timeout
 
       stop_broadway(pid)
     end
@@ -190,16 +193,16 @@ defmodule OffBroadway.Defender365.ProducerTest do
       {:ok, pid} = start_broadway(message_server)
 
       MessageServer.push_messages(message_server, [13])
-      assert_receive {:messages_received, 1}
-      assert_receive {:message_handled, 13, _}
+      assert_receive {:messages_received, 1}, @receive_timeout
+      assert_receive {:message_handled, 13, _}, @receive_timeout
 
-      assert_receive {:messages_received, 0}
-      refute_receive {:message_handled, _, _}
+      assert_receive {:messages_received, 0}, @receive_timeout
+      refute_receive {:message_handled, _, _}, @receive_timeout
 
       MessageServer.push_messages(message_server, [14, 15])
-      assert_receive {:messages_received, 2}
-      assert_receive {:message_handled, 14, _}
-      assert_receive {:message_handled, 15, _}
+      assert_receive {:messages_received, 2}, @receive_timeout
+      assert_receive {:message_handled, 14, _}, @receive_timeout
+      assert_receive {:message_handled, 15, _}, @receive_timeout
 
       stop_broadway(pid)
     end
@@ -210,13 +213,13 @@ defmodule OffBroadway.Defender365.ProducerTest do
       {:ok, pid} = start_broadway(broadway_name, message_server, receive_interval: 5_000)
 
       [producer] = Broadway.producer_names(broadway_name)
-      assert_receive {:messages_received, 0}
+      assert_receive {:messages_received, 0}, @receive_timeout
 
       # Drain and explicitly ask it to receive messages but it shouldn't work
       Broadway.Topology.ProducerStage.drain(producer)
       send(producer, :receive_messages)
 
-      refute_receive {:messages_received, _}, 10
+      refute_receive {:messages_received, _}, @receive_timeout
       stop_broadway(pid)
     end
 
@@ -225,7 +228,7 @@ defmodule OffBroadway.Defender365.ProducerTest do
       {:ok, pid} = start_broadway(message_server)
 
       MessageServer.push_messages(message_server, 1..20)
-      assert_receive {:messages_acknowledged, 10}
+      assert_receive {:messages_acknowledged, 10}, @receive_timeout
 
       stop_broadway(pid)
     end
@@ -250,7 +253,8 @@ defmodule OffBroadway.Defender365.ProducerTest do
       MessageServer.push_messages(message_server, [2])
 
       assert_receive {:telemetry_event, [:off_broadway_defender365, :receive_messages, :start], %{system_time: _},
-                      %{demand: 10}}
+                      %{demand: 10}},
+                     @receive_timeout
 
       stop_broadway(pid)
     end
@@ -273,7 +277,8 @@ defmodule OffBroadway.Defender365.ProducerTest do
       end)
 
       assert_receive {:telemetry_event, [:off_broadway_defender365, :receive_messages, :stop], %{duration: _},
-                      %{received: _, demand: 10}}
+                      %{received: _, demand: 10}},
+                     @receive_timeout
 
       stop_broadway(pid)
     end

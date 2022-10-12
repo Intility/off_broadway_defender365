@@ -81,11 +81,20 @@ defmodule OffBroadway.Defender365.Producer do
   require Logger
 
   @behaviour Producer
+  @max_num_req_min 50
 
   @impl true
   def init(opts) do
     client = opts[:incident_client]
+    receive_interval = opts[:receive_interval]
     {:ok, client_opts} = client.init(opts)
+
+    if receive_interval < 60_000 / @max_num_req_min do
+      Logger.warning(
+        "Receive interval can potentially exceed quota limits of 50 requests per minute. " <>
+          "Consider increasing receive interval to no less than 1200ms."
+      )
+    end
 
     {:producer,
      %{
@@ -146,16 +155,16 @@ defmodule OffBroadway.Defender365.Producer do
   defp handle_receive_messages(%{receive_timer: nil, demand: demand} = state) when demand > 0 do
     messages = receive_messages_from_defender(state, demand)
     new_demand = demand - length(messages)
+    from_timestamp = get_last_updated_timestamp(messages)
 
     receive_timer =
       case {messages, new_demand} do
         {[], _} -> schedule_receive_messages(state.receive_interval)
         {_, 0} -> nil
-        # TODO must use interval to avoid quotas
-        _ -> schedule_receive_messages(0)
+        _ -> schedule_receive_messages(round(60_000 / @max_num_req_min))
       end
 
-    {:noreply, messages, %{state | demand: new_demand, receive_timer: receive_timer}}
+    {:noreply, messages, %{state | demand: new_demand, from_timestamp: from_timestamp, receive_timer: receive_timer}}
   end
 
   defp handle_receive_messages(state), do: {:noreply, [], state}
@@ -164,10 +173,7 @@ defmodule OffBroadway.Defender365.Producer do
          %{incident_client: {client, client_opts}, from_timestamp: timestamp},
          total_demand
        ) do
-    # TODO need tenant_id here
-    # TODO keep track of timestamps so we don't miss any events
-    metadata = %{demand: total_demand}
-
+    metadata = %{tenant_id: client_opts[:config][:tenant_id], demand: total_demand}
     client_opts = Keyword.put(client_opts, :query, "$filter": "lastUpdateTime+ge+#{DateTime.to_iso8601(timestamp)}")
 
     :telemetry.span(
@@ -178,6 +184,22 @@ defmodule OffBroadway.Defender365.Producer do
         {messages, Map.put(metadata, :received, length(messages))}
       end
     )
+  end
+
+  defp get_last_updated_timestamp(messages) when is_list(messages) do
+    timestamps =
+      messages
+      |> Enum.map(fn
+        %{metadata: %{last_update_time: timestamp}} when is_binary(timestamp) -> timestamp
+        _ -> nil
+      end)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(fn timestamp ->
+        {:ok, datetime, _offset} = DateTime.from_iso8601(timestamp)
+        datetime
+      end)
+
+    unless Enum.empty?(timestamps), do: Enum.max(timestamps, DateTime), else: DateTime.utc_now()
   end
 
   defp schedule_receive_messages(interval), do: Process.send_after(self(), :receive_messages, interval)
