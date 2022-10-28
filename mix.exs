@@ -3,7 +3,7 @@ defmodule OffBroadway365Defender.MixProject do
 
   @version "0.1.0"
   @description "Microsoft 365 Defender API Producer for Broadway"
-  @source_url "https://gitlab.intility.com/soc/off_broadway_defender365"
+  @source_url "https://github.com/Intility/off_broadway_defender365"
 
   def project do
     [
@@ -28,6 +28,7 @@ defmodule OffBroadway365Defender.MixProject do
         ]
       ],
       test_coverage: [
+        [tool: ExCoveralls],
         summary: [threshold: 90]
       ]
     ]
@@ -49,11 +50,11 @@ defmodule OffBroadway365Defender.MixProject do
     [
       {:broadway, "~> 1.0"},
       {:decimal, "~> 2.0"},
-      {:ex_doc, "~> 0.29", only: [:dev, :test], runtime: false},
       {:exconstructor, "~> 1.2"},
+      {:excoveralls, "~> 0.15.0", only: :test},
+      {:ex_doc, "~> 0.29", only: [:dev, :test], runtime: false},
       {:hackney, "~> 1.18", optional: true},
       {:jason, ">= 1.0.0"},
-      {:junit_formatter, "~> 3.3", only: :test},
       {:mix_test_watch, "~> 1.1", only: :dev},
       {:nimble_options, "~> 0.4 or ~> 0.5"},
       {:telemetry, "~> 1.1"},
