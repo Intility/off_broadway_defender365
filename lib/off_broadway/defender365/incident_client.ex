@@ -170,6 +170,7 @@ defmodule OffBroadway.Defender365.IncidentClient do
     # TODO: Maybe cache token
     middleware = [
       Tesla.Middleware.FormUrlencoded,
+      Tesla.Middleware.JSON,
       {Tesla.Middleware.BaseUrl, "https://login.windows.net/#{client_option(opts, :tenant_id)}"}
     ]
 
