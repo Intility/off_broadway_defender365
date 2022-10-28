@@ -1,20 +1,21 @@
 # OffBroadway.Defender365
 
-[![pipeline status](https://gitlab.intility.com/soc/off_broadway_defender365/badges/master/pipeline.svg)](https://gitlab.intility.com/soc/off_broadway_defender365/-/commits/master)
-[![coverage report](https://gitlab.intility.com/soc/off_broadway_defender365/badges/master/coverage.svg)](https://gitlab.intility.com/soc/off_broadway_defender365/-/commits/master)
+![pipeline status](https://github.com/Intility/off_broadway_defender365/actions/workflows/elixir.yml/badge.svg?event=push)
 
-[Broadway](https://github.com/dashbitco/broadway) consumer acts as a consumer for incidents reported by the [Microsoft 365 Defender](https://www.microsoft.com/en-us/security/business/siem-and-xdr/microsoft-365-defender) APIs.
+[Broadway](https://github.com/dashbitco/broadway) consumer acts as a consumer for incidents reported by the
+[Microsoft 365 Defender](https://www.microsoft.com/en-us/security/business/siem-and-xdr/microsoft-365-defender) APIs.
 
-Read the full documentation [here](http://soc.pages.intility.com/off_broadway_defender365).
+Read the full documentation [here](https://hexdocs.pm/off_broadway_defender365/readme.html).
 
 ## Installation
 
-This package is not yet available in [Hex](https://hex.pm), so it must be installed directly from the [Intility Gitlab](https://gitlab.intility.com/) server by adding `off_broadway_defender365` to your list of dependencies in `mix.exs`.
+This package is [available in Hex](https://hex.pm/packages/off_broadway_defender365), and can be installed
+by adding `off_broadway_defender365` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:off_broadway_defender365, git: "git@gitlab.intility.com:soc/off_broadway_defender365.git", branch: "master"}
+    {:off_broadway_defender365, "~> 1.0.0"}
   ]
 end
 ```
