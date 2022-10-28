@@ -124,7 +124,11 @@ defmodule OffBroadway.Defender365.IncidentClient do
     :telemetry.execute(
       [:off_broadway_defender365, :receive_messages, :ack],
       %{time: System.system_time(), count: 1},
-      %{tenant_id: ack_options.config[:tenant_id], receipt: extract_message_receipt(message)}
+      %{
+        tenant_id: ack_options.config[:tenant_id],
+        client_id: ack_options.config[:client_id],
+        receipt: extract_message_receipt(message)
+      }
     )
   end
 

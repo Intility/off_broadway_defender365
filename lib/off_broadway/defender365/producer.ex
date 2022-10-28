@@ -40,6 +40,7 @@ defmodule OffBroadway.Defender365.Producer do
         ```
         %{
           tenant_id: string,
+          client_id: string,
           received: integer,
           demand: integer
         }
@@ -54,6 +55,7 @@ defmodule OffBroadway.Defender365.Producer do
         ```
         %{
           tenant_id: string,
+          client_id: string,
           demand: integer,
           kind: kind,
           reason: reason,
@@ -69,6 +71,7 @@ defmodule OffBroadway.Defender365.Producer do
         ```
         %{
           tenant_id: string,
+          client_id: string,
           receipt: receipt
         }
         ```
@@ -173,7 +176,12 @@ defmodule OffBroadway.Defender365.Producer do
          %{incident_client: {client, client_opts}, from_timestamp: timestamp},
          total_demand
        ) do
-    metadata = %{tenant_id: client_opts[:config][:tenant_id], demand: total_demand}
+    metadata = %{
+      tenant_id: client_opts[:config][:tenant_id],
+      client_id: client_opts[:config][:client_id],
+      demand: total_demand
+    }
+
     client_opts = Keyword.put(client_opts, :query, "$filter": "lastUpdateTime+ge+#{DateTime.to_iso8601(timestamp)}")
 
     :telemetry.span(

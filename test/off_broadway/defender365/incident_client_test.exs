@@ -139,7 +139,7 @@ defmodule OffBroadway.Defender365.IncidentClientTest do
       )
 
       assert_receive {:telemetry_event, [:off_broadway_defender365, :receive_messages, :ack], %{time: _},
-                      %{receipt: %{id: 1}, tenant_id: "this-is-my-tenant-id"}}
+                      %{receipt: %{id: 1}, tenant_id: "this-is-my-tenant-id", client_id: "this-is-my-client-id"}}
     end
   end
 
