@@ -1,6 +1,6 @@
 # OffBroadway.Defender365
 
-![pipeline status](https://github.com/Intility/off_broadway_defender365/actions/workflows/elixir.yml/badge.svg?event=push)
+![pipeline status](https://github.com/Intility/off_broadway_defender365/actions/workflows/elixir.yaml/badge.svg?event=push)
 
 [Broadway](https://github.com/dashbitco/broadway) consumer acts as a consumer for incidents reported by the
 [Microsoft 365 Defender](https://www.microsoft.com/en-us/security/business/siem-and-xdr/microsoft-365-defender) APIs.
