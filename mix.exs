@@ -28,7 +28,7 @@ defmodule OffBroadway365Defender.MixProject do
         ]
       ],
       test_coverage: [
-        summary: [threshold: 80]
+        summary: [threshold: 90]
       ]
     ]
   end
@@ -49,13 +49,13 @@ defmodule OffBroadway365Defender.MixProject do
     [
       {:broadway, "~> 1.0"},
       {:decimal, "~> 2.0"},
-      {:ex_doc, "~> 0.28.4", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.29", only: [:dev, :test], runtime: false},
       {:exconstructor, "~> 1.2"},
       {:hackney, "~> 1.18", optional: true},
       {:jason, ">= 1.0.0"},
       {:junit_formatter, "~> 3.3", only: :test},
       {:mix_test_watch, "~> 1.1", only: :dev},
-      {:nimble_options, "~> 0.3 or ~> 0.4"},
+      {:nimble_options, "~> 0.4 or ~> 0.5"},
       {:telemetry, "~> 1.1"},
       {:tesla, "~> 1.4"}
     ]
