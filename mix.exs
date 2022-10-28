@@ -15,13 +15,15 @@ defmodule OffBroadway365Defender.MixProject do
       description: @description,
       deps: deps(),
       package: [
+        name: "off_broadway_defender365",
         maintainers: ["Rolf Håvard Blindheim <rolf.havard.blindheim@intility.no>"],
         licenses: ["Apache-2.0"],
-        links: %{Gitlab: @source_url}
+        links: %{GitHub: @source_url}
       ],
       docs: [
         main: "readme",
         source_ref: "v#{@version}",
+        source_url: @source_url,
         extras: [
           "README.md",
           "LICENSE"
