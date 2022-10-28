@@ -9,7 +9,7 @@ defmodule OffBroadway365Defender.MixProject do
     [
       app: :off_broadway_defender365,
       version: @version,
-      elixir: "~> 1.14",
+      elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       description: @description,
