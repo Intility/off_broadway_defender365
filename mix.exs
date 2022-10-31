@@ -1,7 +1,7 @@
 defmodule OffBroadway365Defender.MixProject do
   use Mix.Project
 
-  @version "1.0.1"
+  @version "1.0.2"
   @description "Microsoft 365 Defender API Producer for Broadway"
   @source_url "https://github.com/Intility/off_broadway_defender365"
 
@@ -51,7 +51,6 @@ defmodule OffBroadway365Defender.MixProject do
   defp deps do
     [
       {:broadway, "~> 1.0"},
-      {:decimal, "~> 2.0"},
       {:exconstructor, "~> 1.2"},
       {:excoveralls, "~> 0.15.0", only: :test},
       {:ex_doc, "~> 0.29", only: [:dev, :test], runtime: false},
