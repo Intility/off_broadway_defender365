@@ -2,7 +2,7 @@
 
 ![pipeline status](https://github.com/Intility/off_broadway_defender365/actions/workflows/elixir.yaml/badge.svg?event=push)
 
-[Broadway](https://github.com/dashbitco/broadway) consumer acts as a consumer for incidents reported by the
+[Broadway](https://github.com/dashbitco/broadway) producer acts as a consumer for incidents reported by the
 [Microsoft 365 Defender](https://www.microsoft.com/en-us/security/business/siem-and-xdr/microsoft-365-defender) APIs.
 
 Read the full documentation [here](https://hexdocs.pm/off_broadway_defender365/readme.html).
