@@ -55,6 +55,7 @@ defmodule OffBroadway.Defender365.IncidentClient do
   @spec client(opts :: Keyword.t()) :: Tesla.Client.t()
   def client(opts) do
     middleware = [
+      {Tesla.Middleware.Logger, filter_headers: ["authorization"]},
       {Tesla.Middleware.BaseUrl, client_option(opts, :base_url)},
       {Tesla.Middleware.BearerAuth, token: fetch_client_token(opts)},
       {Tesla.Middleware.Query, client_option(opts, :query)},
