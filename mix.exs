@@ -1,7 +1,7 @@
 defmodule OffBroadway365Defender.MixProject do
   use Mix.Project
 
-  @version "1.0.2"
+  @version "1.0.3"
   @description "Microsoft 365 Defender API Producer for Broadway"
   @source_url "https://github.com/Intility/off_broadway_defender365"
 
