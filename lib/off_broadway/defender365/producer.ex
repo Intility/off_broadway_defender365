@@ -182,7 +182,7 @@ defmodule OffBroadway.Defender365.Producer do
       demand: total_demand
     }
 
-    client_opts = Keyword.put(client_opts, :query, "$filter": "lastUpdateTime+ge+#{DateTime.to_iso8601(timestamp)}")
+    client_opts = Keyword.put(client_opts, :query, "$filter": "lastUpdateTime ge #{DateTime.to_iso8601(timestamp)}")
 
     :telemetry.span(
       [:off_broadway_defender365, :receive_messages],
