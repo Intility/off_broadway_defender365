@@ -88,7 +88,7 @@ defmodule OffBroadway.Defender365.IncidentClient do
   def maybe_receive_messages({:ok, %{status: 200, body: %{"value" => messages}}}, rem_demand, opts, merge)
       when is_list(messages) and rem_demand > 0 do
     Logger.warning(
-      "Received demand greater than maximum allowed number of incidents allowed to fetch from " <>
+      "Received demand greater than maximum  number of incidents allowed to fetch from " <>
         "365 Defender API. Trying to fetch remaining #{rem_demand} incidents, but this can possibly " <>
         "cause quota limits to be exceeded."
     )
