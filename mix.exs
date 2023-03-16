@@ -52,14 +52,14 @@ defmodule OffBroadway365Defender.MixProject do
     [
       {:broadway, "~> 1.0"},
       {:exconstructor, "~> 1.2"},
-      {:excoveralls, "~> 0.15.0", only: :test},
+      {:excoveralls, "~> 0.16.0", only: :test},
       {:ex_doc, "~> 0.29", only: [:dev, :test], runtime: false},
       {:hackney, "~> 1.18", optional: true},
-      {:jason, ">= 1.0.0"},
+      {:jason, "~> 1.4"},
       {:mix_test_watch, "~> 1.1", only: :dev},
-      {:nimble_options, "~> 0.4 or ~> 0.5"},
-      {:telemetry, "~> 1.1"},
-      {:tesla, "~> 1.4"}
+      {:nimble_options, "~> 0.3.7 or ~> 0.4 or ~> 1.0"},
+      {:telemetry, "~> 1.2"},
+      {:tesla, "~> 1.5"}
     ]
   end
 end
