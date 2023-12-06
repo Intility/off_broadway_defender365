@@ -57,7 +57,7 @@ defmodule OffBroadway365Defender.MixProject do
       {:hackney, "~> 1.18", optional: true},
       {:jason, "~> 1.4"},
       {:mix_test_watch, "~> 1.1", only: :dev},
-      {:nimble_options, "~> 0.3.7 or ~> 0.4 or ~> 1.0"},
+      {:nimble_options, "~> 0.5 or ~> 1.0"},
       {:telemetry, "~> 1.2"},
       {:tesla, "~> 1.5"}
     ]
