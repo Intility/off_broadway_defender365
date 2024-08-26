@@ -24,3 +24,6 @@ off_broadway_defender365-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Local files
+*.gpg
